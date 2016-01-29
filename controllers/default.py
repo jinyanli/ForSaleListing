@@ -9,16 +9,23 @@
 #########################################################################
 
 def index():
-    show_all = request.args(0) == 'all'
-    if show_all:
-        button = A('See unsold', _class='btn', _href=URL('default', 'index'))
+    session.flash = T(request.args(0))
+    unsold = request.args(0) == 'unsold'
+    if  unsold:
+        session.flash = T("Show unsold")
+        forsale=(db.forsale.sold==False)
+        button = A('See unsold', _class='btn btn-success', _href=URL('default', 'index'))
     else:
-        button = A('See all', _class='btn', _href=URL('default', 'index', args=['all']))
+        session.flash = T("Show  All")
+        forsale=db.forsale
+        button = A('See all', _class='btn btn-warning', _href=URL('default', 'index', args='unsold'))
 
-    grid = SQLFORM.grid(db.forsale,csv=False,create=False, searchable=False)
+    grid = SQLFORM.grid(forsale,csv=False,create=False, searchable=False,args=request.args[:1])
     return locals()
 
+
 @auth.requires_login()
+#@auth.requires_signature()
 def add():
     """Add a post."""
     form = SQLFORM(db.forsale)
