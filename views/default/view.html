@@ -6,7 +6,7 @@
 {{= A('Edit', _class='btn btn-warning', _href=URL('default', 'edit', args=[row.id]))}}
 {{= A('Delete', _class='btn btn-danger', _href=URL('default', 'delete', args=[row.id], user_signature=True))}}</p>
 {{pass}}
-<img width="400px"
-     src="{{=URL('download', args=image)}}" />
+</br>
+<p><img width="400px" src="{{=URL('download', args=image)}}" /></p>
 </div>
 {{=form}}
