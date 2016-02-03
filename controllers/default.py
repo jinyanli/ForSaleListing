@@ -20,8 +20,90 @@ def index():
         forsale=db.forsale
         button = A('See all', _class='btn btn-warning', _href=URL('default', 'index', args='unsold'))
 
-    grid = SQLFORM.grid(forsale,csv=False,create=False, searchable=False,args=request.args[:1])
+    def generate_del_button(row):
+        # only the author can delete it.
+        b = ''
+        if auth.user_id == row.user_id:
+            b = A('Delete', _class='btn btn-danger', _href=URL('default', 'delete', args=[row.id],
+                user_signature=True))
+        return b
+
+    def generate_edit_button(row):
+        # only the author can edit it.
+        b = ''
+        if auth.user_id == row.user_id:
+            b = A('Edit', _class='btn btn-danger', _href=URL('default', 'edit', args=[row.id]))
+        return b
+
+    def generate_view_button(row):
+        b = A('view', _class='btn btn-primary', _href=URL('default', 'view', args=[row.id]))
+        return b
+
+    def generate_toggle_sold_button(row):
+        # only the author can toggle it.
+        b = ''
+        if auth.user_id == row.user_id:
+            b = A('Toggle Sold', _class='btn btn-primary', _href=URL('default',
+                  'toggle_sold', args=[row.id], user_signature=True))
+        return b
+    links = [
+        dict(header='Delete', body = generate_del_button),
+        dict(header='Edit', body = generate_edit_button),
+        dict(header='Toggle Sold', body = generate_toggle_sold_button),
+        dict(header='View', body = generate_view_button)
+        ]
+    grid = SQLFORM.grid(forsale, csv=False, create=False, searchable=False,args=request.args[:1],
+                        links=links, editable=False, deletable=False, details=False)
     return locals()
+
+
+def view():
+    """View a post."""
+    # p = db(db.forsale.id == request.args(0)).select().first()
+    p = db.forsale(request.args(0)) or redirect(URL('default', 'index'))
+    image=p.image
+    form = SQLFORM(db.forsale, record=p, readonly=True)
+    # p.name would contain the name of the poster.
+    return dict(image=image,form=form)
+
+@auth.requires_login()
+def edit():
+    """View a post."""
+    # p = db(db.forsale.id == request.args(0)).select().first()
+    p = db.forsale(request.args(0)) or redirect(URL('default', 'index'))
+    if p.user_id != auth.user_id:
+        session.flash = T('Not authorized.')
+        redirect(URL('default', 'index'))
+    form = SQLFORM(db.forsale, record=p)
+    if form.process().accepted:
+        session.flash = T('Updated')
+        redirect(URL('default', 'view', args=[p.id]))
+    # p.name would contain the name of the poster.
+    return dict(form=form)
+
+
+@auth.requires_login()
+@auth.requires_signature()
+def toggle_sold():
+    item = db.forsale(request.args(0)) or redirect(URL('default', 'index'))
+    item.update_record(sold = not item.sold)
+    redirect(URL('default', 'index')) # Assuming this is where you want to go
+
+
+
+@auth.requires_login()
+@auth.requires_signature()
+def delete():
+    """Deletes a post."""
+    p = db.forsale(request.args(0)) or redirect(URL('default', 'index'))
+    if p.user_id != auth.user_id:
+        session.flash = T('Not authorized.')
+        redirect(URL('default', 'index'))
+    form = FORM.confirm('Are you sure?')
+    if form.accepted:
+        db(db.forsale.id == p.id).delete()
+        redirect(URL('default', 'index'))
+    return dict(form=form)
 
 
 @auth.requires_login()

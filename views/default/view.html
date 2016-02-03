@@ -1,0 +1,10 @@
+{{extend 'layout.html'}}
+<h1>Post</h1>
+<div >
+<img width="400px"
+     src="{{=URL('download', args=image)}}" />
+</div>
+{{=form}}
+<p>
+{{=A('Back', _class='btn btn-primary', _href=URL('default', 'index'))}}
+</p>
