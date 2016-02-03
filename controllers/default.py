@@ -11,17 +11,18 @@
 def index():
     session.flash = T(request.args(0))
     unsold = request.args(0) == 'unsold'
+
     if  unsold:
-        session.flash = T("Show unsold")
+        session.flash = T("See All")
         forsale=(db.forsale.sold==False)
-        button = A('See unsold', _class='btn btn-success', _href=URL('default', 'index'))
+        button = A('See all', _class='btn btn-success', _href=URL('default', 'index'))
     else:
-        session.flash = T("Show  All")
+        session.flash = T("Show  Unsold")
         forsale=db.forsale
-        button = A('See all', _class='btn btn-warning', _href=URL('default', 'index', args='unsold'))
+        button = A('See Unsold', _class='btn btn-warning', _href=URL('default', 'index', args='unsold'))
 
     def generate_del_button(row):
-        # only the author can delete it.
+        # only the author can delete it. Got this code from Luca's homework example
         b = ''
         if auth.user_id == row.user_id:
             b = A('Delete', _class='btn btn-danger', _href=URL('default', 'delete', args=[row.id],
@@ -43,7 +44,11 @@ def index():
         # only the author can toggle it.
         b = ''
         if auth.user_id == row.user_id:
-            b = A('Toggle Sold', _class='btn btn-primary', _href=URL('default',
+            if row.sold:
+                name='Toggle Unsold'
+            else:
+                name='Toggle Sold'
+            b = A(name, _class='btn btn-primary', _href=URL('default',
                   'toggle_sold', args=[row.id], user_signature=True))
         return b
     links = [
@@ -52,24 +57,22 @@ def index():
         dict(header='Toggle Sold', body = generate_toggle_sold_button),
         dict(header='View', body = generate_view_button)
         ]
-    grid = SQLFORM.grid(forsale, csv=False, create=False, searchable=False,args=request.args[:1],
+
+    grid = SQLFORM.grid(forsale, csv=False, create=False, searchable=False, args=request.args[:1],
                         links=links, editable=False, deletable=False, details=False)
     return locals()
 
 
 def view():
     """View a post."""
-    # p = db(db.forsale.id == request.args(0)).select().first()
     p = db.forsale(request.args(0)) or redirect(URL('default', 'index'))
     image=p.image
     form = SQLFORM(db.forsale, record=p, readonly=True)
-    # p.name would contain the name of the poster.
-    return dict(image=image,form=form)
+    return dict(image=image,form=form, row=p)
 
 @auth.requires_login()
 def edit():
     """View a post."""
-    # p = db(db.forsale.id == request.args(0)).select().first()
     p = db.forsale(request.args(0)) or redirect(URL('default', 'index'))
     if p.user_id != auth.user_id:
         session.flash = T('Not authorized.')
@@ -85,16 +88,18 @@ def edit():
 @auth.requires_login()
 @auth.requires_signature()
 def toggle_sold():
+    #toggle_sold function
     item = db.forsale(request.args(0)) or redirect(URL('default', 'index'))
     item.update_record(sold = not item.sold)
-    redirect(URL('default', 'index')) # Assuming this is where you want to go
-
+    redirect(URL('default', 'index'))
 
 
 @auth.requires_login()
 @auth.requires_signature()
 def delete():
-    """Deletes a post."""
+    """Deletes a post.
+       Got this code from Luca's homework example
+    """
     p = db.forsale(request.args(0)) or redirect(URL('default', 'index'))
     if p.user_id != auth.user_id:
         session.flash = T('Not authorized.')
